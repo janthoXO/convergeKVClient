@@ -1,0 +1,509 @@
+openapi: "3.1.0"
+info:
+  title: convergeKV Bridge API
+  version: "1.0.0"
+  description: >
+    HTTP bridge between the React debug UI and the convergeKV gRPC cluster.
+    The bridge proxies gRPC calls, introspects Docker containers, and exposes
+    a simple REST surface that the UI polls.
+
+servers:
+  - url: http://localhost:8787
+    description: Local bridge server
+
+paths:
+  /api/cluster:
+    get:
+      operationId: getCluster
+      summary: List all convergeKV nodes with their current Status
+      responses:
+        "200":
+          description: Array of known nodes (attached or isolated)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClusterNodeInfo"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/nodes:
+    post:
+      operationId: addNode
+      summary: Start a new convergeKV node (replicated from an existing node)
+      responses:
+        "200":
+          description: The newly created node
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddNodeResponse"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/nodes/{id}:
+    delete:
+      operationId: removeNode
+      summary: Stop and remove a convergeKV node container
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+      responses:
+        "200":
+          description: Node removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkActionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/nodes/{id}/entries:
+    get:
+      operationId: getNodeEntries
+      summary: Stream all documents this node holds via DebugService.DumpDocuments
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+      responses:
+        "200":
+          description: Array of documents (one per key/partition) stored on this node
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DebugDoc"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/nodes/{id}/kv:
+    post:
+      operationId: putNodeKv
+      summary: Write a key–value pair to a node via KVService.Put
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutKvRequest"
+      responses:
+        "200":
+          description: Write accepted (possibly partial if the node is partitioned)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    patch:
+      operationId: patchNodeKv
+      summary: Partially update a key on a node via KVService.Patch
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchKvRequest"
+      responses:
+        "200":
+          description: Patch accepted (possibly partial if the node is partitioned)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    delete:
+      operationId: deleteNodeKv
+      summary: Delete a key on a node via KVService.Delete
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteKvRequest"
+      responses:
+        "200":
+          description: Delete accepted (possibly partial if the node is partitioned)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/nodes/{id}/network:
+    post:
+      operationId: setNodeNetwork
+      summary: Connect or disconnect a node from the convergekv Docker network
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NetworkActionRequest"
+      responses:
+        "200":
+          description: Action succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkActionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+components:
+  parameters:
+    NodeId:
+      name: id
+      in: path
+      required: true
+      description: Container ID or container name
+      schema:
+        type: string
+
+  schemas:
+    Member:
+      type: object
+      description: A node in the membership table as seen by the inspected node
+      required:
+        - id
+        - addr
+        - dead
+        - generation
+      properties:
+        id:
+          type: string
+          description: Member node id (canonical UUID)
+        addr:
+          type: string
+          description: Node-facing gRPC address peers dial
+        dead:
+          type: boolean
+          description: Dead-within-grace phantom
+        generation:
+          type: string
+          description: Node start time (ms), serialised as string (uint64)
+
+    Owner:
+      type: object
+      description: An owner entry for a partition (HRW rank order)
+      required:
+        - id
+        - status
+        - dead
+      properties:
+        id:
+          type: string
+          description: Owner node id (canonical UUID)
+        status:
+          type: integer
+          description: 0 none, 1 bootstrapping, 2 active, 3 draining
+        dead:
+          type: boolean
+
+    PartitionOwners:
+      type: object
+      required:
+        - partition
+        - owners
+      properties:
+        partition:
+          type: integer
+        owners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Owner"
+
+    ClusterNodeInfo:
+      type: object
+      required:
+        - id
+        - name
+        - networkAttached
+        - grpcHostPort
+        - reachable
+        - nodeId
+        - generation
+        - partitionsTotal
+        - clientAddr
+        - nodeAddr
+        - members
+        - partitionsTable
+        - ownedPartitions
+      properties:
+        id:
+          type: string
+          description: Full 64-char Docker container ID
+        name:
+          type: string
+          description: Container name (without leading /)
+        networkAttached:
+          type: boolean
+          description: Whether the container is currently connected to the convergekv network
+        grpcHostPort:
+          type: ["integer", "null"]
+          description: Host port that maps to the container's gRPC port (50051); null when isolated
+        reachable:
+          type: boolean
+          description: Whether DebugService.Inspect succeeded for this node
+        nodeId:
+          type: ["string", "null"]
+          description: This node's id / ActorID (canonical UUID); null when unreachable
+        generation:
+          type: ["string", "null"]
+          description: Node start time (ms), serialised as string (uint64); null when unreachable
+        partitionsTotal:
+          type: ["integer", "null"]
+          description: Cluster-wide partition count P; null when unreachable
+        clientAddr:
+          type: ["string", "null"]
+          description: Client-facing gRPC listen address; null when unreachable
+        nodeAddr:
+          type: ["string", "null"]
+          description: Advertised node-facing gRPC address peers dial; null when unreachable
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+          description: Membership as this node sees it; empty when unreachable
+        partitionsTable:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionOwners"
+          description: This node's own view of the owners table (one entry per partition)
+        ownedPartitions:
+          type: array
+          items:
+            type: integer
+          description: Partitions this node owns (its own nodeId appears among the owners)
+
+    DebugDoc:
+      type: object
+      required:
+        - partition
+        - key
+        - document
+        - contextHash
+        - tombstone
+      properties:
+        partition:
+          type: integer
+        key:
+          type: string
+        document:
+          type: string
+          description: Rendered JSON document; empty string for a tombstone
+        contextHash:
+          type: string
+          description: Hex-encoded hash of the causal context (diagnostics)
+        tombstone:
+          type: boolean
+        fields:
+          type: array
+          description: >
+            Per-field current superseding register (the LWW winner), with its
+            dot and HLC. Empty/omitted for tombstones.
+          items:
+            $ref: "#/components/schemas/DebugField"
+
+    DebugField:
+      type: object
+      required:
+        - name
+        - value
+        - dotActor
+        - dotSeq
+        - hlc
+        - hlcPhysMs
+        - hlcLogical
+      properties:
+        name:
+          type: string
+          description: Field name
+        value:
+          type: string
+          description: Winning register's raw JSON value
+        dotActor:
+          type: string
+          description: Canonical UUID of the winning register's actor
+        dotSeq:
+          type: string
+          description: Winning register's dot sequence number, serialised as string (uint64)
+        hlc:
+          type: string
+          description: Packed HLC (phys_ms << 16 | logical), serialised as string (uint64)
+        hlcPhysMs:
+          type: string
+          description: Decomposed HLC physical milliseconds, serialised as string (uint64)
+        hlcLogical:
+          type: integer
+          description: Decomposed HLC logical counter
+
+    PutKvRequest:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          minLength: 1
+        value:
+          type: object
+          additionalProperties: true
+          description: Arbitrary JSON object; serialised to bytes and sent to KVService.Put
+
+    PatchKvRequest:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          minLength: 1
+        value:
+          type: object
+          additionalProperties: true
+          description: >
+            Fields to upsert (set/add). May be empty/omitted when the patch
+            only deletes fields. Serialised to bytes and sent to KVService.Patch.
+        deleteFields:
+          type: array
+          items:
+            type: string
+          description: Top-level field names to remove. A name may not also appear in value.
+
+    DeleteKvRequest:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          minLength: 1
+
+    NetworkActionRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum:
+            - connect
+            - disconnect
+
+    NetworkActionResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+
+    AddNodeResponse:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Full Docker container ID of the new node
+        name:
+          type: string
+          description: Container name of the new node
+
+    MutationResult:
+      type: object
+      description: >
+        Result of a put/delete. `partial` is true when the node accepted the
+        write locally but could not replicate to its peers (e.g. it is
+        partitioned), in which case the change reconciles when it rejoins.
+      properties:
+        partial:
+          type: boolean
+        detail:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: gRPC status code (present on 502)
+        details:
+          type: string
+          description: gRPC error details
+        error:
+          type: string
+          description: Human-readable error message
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Node not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: Node exists but has no reachable gRPC port (isolated)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadGateway:
+      description: gRPC call failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

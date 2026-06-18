@@ -1,21 +1,52 @@
-# React + TypeScript + Vite + shadcn/ui
+# convergeKV debug client
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+Visual cluster debugger for the [convergeKV](https://github.com/janthoXO/convergeKV) distributed KV store.
 
-## Adding components
+## Structure
 
-To add components to your app, run the following command:
+```
+convergeKVClient/
+├── contracts/          # OpenAPI 3.1 spec — single source of truth for the HTTP API
+├── bridge/             # Express server: proxies gRPC calls + manages Docker network
+└── client/             # React + Vite debug UI
+```
+
+`docker-compose.yml` in the root starts the convergeKV backend cluster.
+
+## Running
 
 ```bash
-npx shadcn@latest add button
+# Start the backend cluster (requires a convergeKV Docker image)
+docker compose up -d
+
+# Start the bridge (one terminal)
+cd bridge
+pnpm install        # first time only
+pnpm dev            # listens on http://localhost:8787
+
+# Start the React client (another terminal)
+cd client
+pnpm install        # first time only
+pnpm dev            # opens http://localhost:5173
 ```
 
-This will place the ui components in the `src/components` directory.
+The client's Vite dev server proxies `/api/*` to the bridge, so no CORS setup is needed.
 
-## Using components
+## Codegen
 
-To use the components in your app, import them as follows:
+Both subprojects generate types and SDK from `contracts/openapi.yaml`:
 
-```tsx
-import { Button } from "@/components/ui/button"
+```bash
+# After editing contracts/openapi.yaml, regenerate in both:
+cd bridge && pnpm gen    # generates bridge/src/gen/ (Zod schemas + TS types)
+cd client && pnpm gen    # generates client/src/gen/ (fetch SDK + TS types)
 ```
+
+The generated `src/gen/` folders are committed, so a fresh clone works without running `pnpm gen`.
+
+## Features
+
+- **Cluster graph** — nodes laid out in a ring; edges show peer connections (green = mutual, amber = one-sided)
+- **Hover card** — hover a node to inspect all CRDT entries via `DebugService.ScanAll`; click to pin
+- **Network isolation** — click a node's port handle to disconnect/reconnect it from the `convergekv` Docker network
+- **Write KV** — the + button in the hover card opens a form that calls `KVService.Put` on the selected node
