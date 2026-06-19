@@ -1,0 +1,49 @@
+name: Package Gate
+
+on:
+  pull_request:
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+      bridge: ${{ steps.filter.outputs.bridge }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Detect changed services
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'client/**'
+              - '.github/workflows/build.client.yml'
+              - '.github/workflows/package.client.yml'
+            bridge:
+              - 'bridge/**'
+              - '.github/workflows/build.bridge.yml'
+              - '.github/workflows/package.bridge.yml'
+
+  package-client:
+    needs: detect-changes
+    if: github.base_ref == 'main' && needs.detect-changes.outputs.client == 'true'
+    uses: ./.github/workflows/package.client.yml
+
+  package-bridge:
+    needs: detect-changes
+    if: github.base_ref == 'main' && needs.detect-changes.outputs.bridge == 'true'
+    uses: ./.github/workflows/package.bridge.yml
+
+  ci-gate:
+    needs: [package-client, package-bridge]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all package jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            exit 1
+          fi

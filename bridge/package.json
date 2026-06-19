@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "build": "tsc && tsc-alias && rm -rf dist/proto && cp -R src/proto dist/proto",
+    "start": "node dist/index.js",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "contracts:generate": "openapi-ts"
   },
@@ -27,6 +30,7 @@
     "eslint": "^10",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.3",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.22.4",
     "typescript": "~6",
     "typescript-eslint": "^8"

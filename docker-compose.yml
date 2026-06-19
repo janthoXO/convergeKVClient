@@ -1,0 +1,33 @@
+services:
+  bridge:
+    build:
+      context: ./bridge
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3001
+      # docker-compose project label of the convergeKV cluster to manage.
+      COMPOSE_PROJECT: ${COMPOSE_PROJECT:-convergekv}
+      # Reach a node's published gRPC port via the host gateway (the bridge is
+      # itself a container, so loopback would point at the bridge, not the host).
+      NODE_HOST: ${NODE_HOST:-host.docker.internal}
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      # Makes host.docker.internal resolve on Linux too (already works on
+      # Docker Desktop for macOS/Windows).
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # The bridge drives the cluster via the Docker daemon, not a URL, so it
+      # needs the host's Docker socket.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    environment:
+      API_URL: ${API_URL:-http://bridge:3001}
+    ports:
+      - "3000:80"
+    depends_on:
+      - bridge

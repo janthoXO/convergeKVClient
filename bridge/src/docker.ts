@@ -1,6 +1,12 @@
+import os from "node:os"
 import Dockerode from "dockerode"
+import { env } from "./env.ts"
 
 const docker = new Dockerode()
+
+// The bridge's own container, used to join per-node debug networks. Docker sets
+// the hostname to the container id by default; override via BRIDGE_CONTAINER.
+const selfContainer = () => env.BRIDGE_CONTAINER || os.hostname()
 
 // The live cluster is a docker-compose project. Containers are identified by the
 // compose project label; the data-plane gRPC (KV + Debug) listens on port 7000,
@@ -12,7 +18,7 @@ const docker = new Dockerode()
 // node ("port click") disconnects it from the shared CLUSTER network — which
 // drops its published-port forwarding — so the bridge falls back to the node's
 // private debug-network IP, which survives the partition.
-const COMPOSE_PROJECT = "convergekv"
+const COMPOSE_PROJECT = env.COMPOSE_PROJECT
 const GRPC_PORT = 7000
 const DEBUG_NET_PREFIX = "convergekv-dbg-"
 
@@ -111,14 +117,41 @@ async function attachDebugNetwork(name: string): Promise<void> {
   }
 }
 
-// Ensure every cluster container is attached to its debug network. Only does
-// work (and re-lists for fresh IPs) when something is missing, so the steady
-// state is a single listContainers call per poll.
+// Debug networks the bridge has already joined this process. Keeps the steady
+// state cheap — once attached we never re-issue the connect call.
+const selfAttached = new Set<string>()
+
+// Best-effort: attach the bridge's own container to a node's debug network so
+// it can dial a partitioned node by its debug-network IP. A no-op when the
+// bridge is not itself a container (e.g. local `pnpm dev`), where the published
+// host port already reaches the node — so failures here are swallowed.
+async function attachSelfToDebugNetwork(net: string): Promise<void> {
+  if (selfAttached.has(net)) return
+  try {
+    await docker.getNetwork(net).connect({ Container: selfContainer() })
+    selfAttached.add(net)
+  } catch (err) {
+    const msg = (err as Error).message || ""
+    if (/already exists|already connected/i.test(msg)) selfAttached.add(net)
+    // Otherwise (network not created yet, or not running in a container) skip;
+    // it is retried on the next poll.
+  }
+}
+
+// Ensure every cluster container — and the bridge itself — is attached to each
+// debug network. Node attachment only re-lists when something is missing, so
+// the steady state is a single listContainers call per poll; self-attachment is
+// short-circuited by the selfAttached cache.
 async function ensureDebugNetworks(
   containers: RawContainer[]
 ): Promise<RawContainer[]> {
   const missing = containers.filter(
     (c) => !networksOf(c)[debugNetName(containerName(c))]?.IPAddress
+  )
+  await Promise.all(
+    containers.map((c) =>
+      attachSelfToDebugNetwork(debugNetName(containerName(c)))
+    )
   )
   if (missing.length === 0) return containers
   await Promise.all(missing.map((c) => attachDebugNetwork(containerName(c))))
@@ -147,9 +180,9 @@ export async function listClusterNodes(): Promise<ClusterNode[]> {
     // survives isolation. Final fallbacks cover the brief window before the
     // debug attach lands.
     let grpcAddr: string | null = null
-    if (onCluster && publishedPort) grpcAddr = `127.0.0.1:${publishedPort}`
+    if (onCluster && publishedPort) grpcAddr = `${env.NODE_HOST}:${publishedPort}`
     else if (debugIp) grpcAddr = `${debugIp}:${GRPC_PORT}`
-    else if (publishedPort) grpcAddr = `127.0.0.1:${publishedPort}`
+    else if (publishedPort) grpcAddr = `${env.NODE_HOST}:${publishedPort}`
     else if (clusterIp) grpcAddr = `${clusterIp}:${GRPC_PORT}`
 
     return {
@@ -234,9 +267,17 @@ export async function removeNode(idOrName: string): Promise<void> {
   }
   const name = containerName(node)
   await docker.getContainer(node.Id).remove({ force: true })
-  // Best-effort cleanup of the now-orphaned debug network.
+  // Best-effort cleanup of the now-orphaned debug network. Detach the bridge
+  // first (an active endpoint would block removal) and forget it so a reused
+  // node name re-attaches cleanly.
+  const net = debugNetName(name)
+  selfAttached.delete(net)
   await docker
-    .getNetwork(debugNetName(name))
+    .getNetwork(net)
+    .disconnect({ Container: selfContainer(), Force: true })
+    .catch(() => {})
+  await docker
+    .getNetwork(net)
     .remove()
     .catch(() => {})
 }

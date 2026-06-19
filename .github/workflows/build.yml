@@ -1,0 +1,47 @@
+name: Build Gate
+
+on:
+  pull_request:
+    
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+      bridge: ${{ steps.filter.outputs.bridge }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Detect changed services
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'client/**'
+              - '.github/workflows/build.client.yml'
+            bridge:
+              - 'bridge/**'
+              - '.github/workflows/build.bridge.yml'
+
+  build-client:
+    needs: detect-changes
+    if: github.base_ref != 'main' && needs.detect-changes.outputs.client == 'true'
+    uses: ./.github/workflows/build.client.yml
+
+  build-bridge:
+    needs: detect-changes
+    if: github.base_ref != 'main' && needs.detect-changes.outputs.bridge == 'true'
+    uses: ./.github/workflows/build.bridge.yml
+
+  ci-gate:
+    needs: [build-client, build-bridge]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all build jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            exit 1
+          fi
