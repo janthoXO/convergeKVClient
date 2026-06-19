@@ -187,7 +187,7 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
         <DialogHeader>
           <DialogTitle>Edit "{doc?.key}" on {nodeName}</DialogTitle>
           <DialogDescription>
-            Changes are sent as a partial update (KVService.Patch): edited and added
+            Changes are sent as a partial update (KV.Patch): edited and added
             fields are upserted, removed fields are deleted, untouched fields are left
             as-is.
           </DialogDescription>

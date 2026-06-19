@@ -34,12 +34,12 @@ export const addNode = <ThrowOnError extends boolean = false>(options?: Options<
 export const removeNode = <ThrowOnError extends boolean = false>(options: Options<RemoveNodeData, ThrowOnError>): RequestResult<RemoveNodeResponses, RemoveNodeErrors, ThrowOnError> => (options.client ?? client).delete<RemoveNodeResponses, RemoveNodeErrors, ThrowOnError>({ url: '/api/nodes/{id}', ...options });
 
 /**
- * Stream all documents this node holds via DebugService.DumpDocuments
+ * Stream all documents this node holds via Debug.DumpDocuments
  */
 export const getNodeEntries = <ThrowOnError extends boolean = false>(options: Options<GetNodeEntriesData, ThrowOnError>): RequestResult<GetNodeEntriesResponses, GetNodeEntriesErrors, ThrowOnError> => (options.client ?? client).get<GetNodeEntriesResponses, GetNodeEntriesErrors, ThrowOnError>({ url: '/api/nodes/{id}/entries', ...options });
 
 /**
- * Delete a key on a node via KVService.Delete
+ * Delete a key on a node via KV.Delete
  */
 export const deleteNodeKv = <ThrowOnError extends boolean = false>(options: Options<DeleteNodeKvData, ThrowOnError>): RequestResult<DeleteNodeKvResponses, DeleteNodeKvErrors, ThrowOnError> => (options.client ?? client).delete<DeleteNodeKvResponses, DeleteNodeKvErrors, ThrowOnError>({
     url: '/api/nodes/{id}/kv',
@@ -51,7 +51,7 @@ export const deleteNodeKv = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * Partially update a key on a node via KVService.Patch
+ * Partially update a key on a node via KV.Patch
  */
 export const patchNodeKv = <ThrowOnError extends boolean = false>(options: Options<PatchNodeKvData, ThrowOnError>): RequestResult<PatchNodeKvResponses, PatchNodeKvErrors, ThrowOnError> => (options.client ?? client).patch<PatchNodeKvResponses, PatchNodeKvErrors, ThrowOnError>({
     url: '/api/nodes/{id}/kv',
@@ -63,7 +63,7 @@ export const patchNodeKv = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * Write a key–value pair to a node via KVService.Put
+ * Write a key–value pair to a node via KV.Put
  */
 export const putNodeKv = <ThrowOnError extends boolean = false>(options: Options<PutNodeKvData, ThrowOnError>): RequestResult<PutNodeKvResponses, PutNodeKvErrors, ThrowOnError> => (options.client ?? client).post<PutNodeKvResponses, PutNodeKvErrors, ThrowOnError>({
     url: '/api/nodes/{id}/kv',

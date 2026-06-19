@@ -7,12 +7,12 @@
 Both subprojects codegen from this file. Run from either subproject:
 
 ```bash
-pnpm gen
+pnpm contracts:generate
 ```
 
 This invokes `@hey-api/openapi-ts` pointed at `../contracts/openapi.yaml` and writes generated output to `src/gen/`.
 
-The generated `src/gen/` folders are committed, so a fresh clone works without running `pnpm gen`. Re-run it whenever you change this YAML.
+The generated `src/gen/` folders are committed, so a fresh clone works without running `pnpm contracts:generate`. Re-run it whenever you change this YAML.
 
 ## Generated artefacts
 
@@ -26,5 +26,5 @@ The generated `src/gen/` folders are committed, so a fresh clone works without r
 ## Adding or changing an endpoint
 
 1. Edit `openapi.yaml`.
-2. Run `pnpm gen` in both `bridge/` and `client/`.
+2. Run `pnpm contracts:generate` in both `bridge/` and `client/`.
 3. Fix any resulting TypeScript errors — they are the spec-drift detector.

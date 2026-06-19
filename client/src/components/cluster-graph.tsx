@@ -200,7 +200,7 @@ export function ClusterGraph() {
         <p className="text-destructive text-sm font-medium">Bridge unreachable</p>
         <p className="text-muted-foreground max-w-xs text-center text-xs">{error}</p>
         <p className="text-muted-foreground text-xs">
-          Run <code className="font-mono">pnpm dev:server</code> to start the bridge.
+          Run <code className="font-mono">pnpm dev</code> in <code className="font-mono">bridge/</code> to start the bridge.
         </p>
       </div>
     )

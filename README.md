@@ -22,7 +22,7 @@ docker compose up -d
 # Start the bridge (one terminal)
 cd bridge
 pnpm install        # first time only
-pnpm dev            # listens on http://localhost:8787
+pnpm dev            # listens on http://localhost:3030
 
 # Start the React client (another terminal)
 cd client
@@ -38,15 +38,16 @@ Both subprojects generate types and SDK from `contracts/openapi.yaml`:
 
 ```bash
 # After editing contracts/openapi.yaml, regenerate in both:
-cd bridge && pnpm gen    # generates bridge/src/gen/ (Zod schemas + TS types)
-cd client && pnpm gen    # generates client/src/gen/ (fetch SDK + TS types)
+cd bridge && pnpm contracts:generate    # generates bridge/src/gen/ (Zod schemas + TS types)
+cd client && pnpm contracts:generate    # generates client/src/gen/ (fetch SDK + TS types)
 ```
 
-The generated `src/gen/` folders are committed, so a fresh clone works without running `pnpm gen`.
+The generated `src/gen/` folders are committed, so a fresh clone works without running `pnpm contracts:generate`.
 
 ## Features
 
-- **Cluster graph** — nodes laid out in a ring; edges show peer connections (green = mutual, amber = one-sided)
-- **Hover card** — hover a node to inspect all CRDT entries via `DebugService.ScanAll`; click to pin
-- **Network isolation** — click a node's port handle to disconnect/reconnect it from the `convergekv` Docker network
-- **Write KV** — the + button in the hover card opens a form that calls `KVService.Put` on the selected node
+- **Cluster graph** — nodes laid out in a ring; edges show owner overlap per partition (green = mutual, amber = one-sided)
+- **Node inspection** — open a node to inspect its identity, membership view, and all CRDT documents it holds, streamed via the gRPC `Debug` service (`Inspect` + `DumpDocuments`)
+- **Write KV** — set, patch, or delete a key on the selected node via the gRPC `KV` service (`Put` / `Patch` / `Delete`)
+- **Cluster size** — add or remove convergeKV containers on the fly
+- **Network isolation** — disconnect/reconnect a node from the `convergekv` Docker network to simulate a partition

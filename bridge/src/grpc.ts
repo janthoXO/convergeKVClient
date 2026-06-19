@@ -1,7 +1,6 @@
 import * as grpc from "@grpc/grpc-js"
 import * as protoLoader from "@grpc/proto-loader"
 import path from "path"
-import { env } from "./env.ts"
 
 const PROTO_ROOT = path.join(import.meta.dirname, "proto")
 
@@ -99,13 +98,6 @@ function deadline(ms: number): { deadline: Date } {
   return { deadline: new Date(Date.now() + ms) }
 }
 
-/** The Debug service is gated; reuse the same bearer token the old ScanAll sent. */
-function debugMetadata(): grpc.Metadata {
-  const meta = new grpc.Metadata()
-  meta.set("authorization", `Bearer ${env.DEBUG_TOKEN}`)
-  return meta
-}
-
 /** Format 16 raw UUID bytes into a canonical 36-char UUID string. */
 function uuidFromBytes(b: Buffer | Uint8Array | undefined | null): string {
   if (!b || b.length === 0) return ""
@@ -161,7 +153,6 @@ export function inspect(addr: string): Promise<InspectResult> {
   return new Promise((resolve, reject) => {
     getDebugClient(addr).Inspect(
       {},
-      debugMetadata(),
       deadline(3000),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (err: grpc.ServiceError | null, response: any) => {
@@ -175,8 +166,7 @@ export function inspect(addr: string): Promise<InspectResult> {
 export function dumpDocuments(addr: string): Promise<DebugDoc[]> {
   return new Promise((resolve, reject) => {
     const call = getDebugClient(addr).DumpDocuments(
-      {},
-      debugMetadata()
+      {}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) as grpc.ClientReadableStream<any>
     const docs: DebugDoc[] = []

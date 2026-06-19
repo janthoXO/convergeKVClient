@@ -8,7 +8,7 @@ info:
     a simple REST surface that the UI polls.
 
 servers:
-  - url: http://localhost:8787
+  - url: http://localhost:3030
     description: Local bridge server
 
 paths:
@@ -65,7 +65,7 @@ paths:
   /api/nodes/{id}/entries:
     get:
       operationId: getNodeEntries
-      summary: Stream all documents this node holds via DebugService.DumpDocuments
+      summary: Stream all documents this node holds via Debug.DumpDocuments
       parameters:
         - $ref: "#/components/parameters/NodeId"
       responses:
@@ -87,7 +87,7 @@ paths:
   /api/nodes/{id}/kv:
     post:
       operationId: putNodeKv
-      summary: Write a key–value pair to a node via KVService.Put
+      summary: Write a key–value pair to a node via KV.Put
       parameters:
         - $ref: "#/components/parameters/NodeId"
       requestBody:
@@ -113,7 +113,7 @@ paths:
           $ref: "#/components/responses/BadGateway"
     patch:
       operationId: patchNodeKv
-      summary: Partially update a key on a node via KVService.Patch
+      summary: Partially update a key on a node via KV.Patch
       parameters:
         - $ref: "#/components/parameters/NodeId"
       requestBody:
@@ -139,7 +139,7 @@ paths:
           $ref: "#/components/responses/BadGateway"
     delete:
       operationId: deleteNodeKv
-      summary: Delete a key on a node via KVService.Delete
+      summary: Delete a key on a node via KV.Delete
       parameters:
         - $ref: "#/components/parameters/NodeId"
       requestBody:
@@ -282,7 +282,7 @@ components:
           description: Host port that maps to the container's gRPC port (50051); null when isolated
         reachable:
           type: boolean
-          description: Whether DebugService.Inspect succeeded for this node
+          description: Whether Debug.Inspect succeeded for this node
         nodeId:
           type: ["string", "null"]
           description: This node's id / ActorID (canonical UUID); null when unreachable
@@ -388,7 +388,7 @@ components:
         value:
           type: object
           additionalProperties: true
-          description: Arbitrary JSON object; serialised to bytes and sent to KVService.Put
+          description: Arbitrary JSON object; serialised to bytes and sent to KV.Put
 
     PatchKvRequest:
       type: object
@@ -403,7 +403,7 @@ components:
           additionalProperties: true
           description: >
             Fields to upsert (set/add). May be empty/omitted when the patch
-            only deletes fields. Serialised to bytes and sent to KVService.Patch.
+            only deletes fields. Serialised to bytes and sent to KV.Patch.
         deleteFields:
           type: array
           items:

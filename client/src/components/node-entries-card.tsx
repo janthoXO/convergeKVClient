@@ -373,7 +373,7 @@ export function NodeEntriesCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{pendingDelete}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              This issues KVService.Delete for the key on {nodeName}. The delete
+              This issues KV.Delete for the key on {nodeName}. The delete
               propagates as a tombstone across the cluster.
             </AlertDialogDescription>
           </AlertDialogHeader>
