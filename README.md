@@ -11,7 +11,7 @@ convergeKVClient/
 └── client/             # React + Vite debug UI
 ```
 
-`docker-compose.yml` in the root starts the convergeKV backend cluster.
+The root `docker-compose.yml` builds and runs the debug tooling itself (the bridge and the client). The convergeKV backend cluster it inspects runs separately — see [Running with Docker Compose](#running-with-docker-compose).
 
 ## Running
 
@@ -31,6 +31,10 @@ pnpm dev            # opens http://localhost:5173
 ```
 
 The client's Vite dev server proxies `/api/*` to the bridge, so no CORS setup is needed.
+
+### Running with Docker Compose
+
+Instead of running the two dev servers by hand, the root `docker-compose.yml` builds and runs the whole debug tool as containers. From the repo root, `docker compose up -d --build` brings up the bridge (Express, published on `http://localhost:3001`) and the client (a static build served by nginx on `http://localhost:3000`) — open the client URL to use the debugger. The nginx container reverse-proxies the browser's same-origin `/api/*` requests to the bridge, so the only port you need is `3000`. The bridge container discovers and drives the cluster through the host's Docker daemon, so it mounts `/var/run/docker.sock` and reaches each node's published gRPC port over `host.docker.internal`; this means a convergeKV cluster (a Compose project labelled `convergekv`, with nodes exposing gRPC port `7000`) must already be running on the same Docker host before you start the tool. Three environment variables let you adjust this without editing the file: `COMPOSE_PROJECT` (default `convergekv`) selects which cluster to manage, `NODE_HOST` (default `host.docker.internal`) is where the bridge dials nodes' published ports, and `API_URL` (default `http://bridge:3001`) is the bridge address the client's nginx proxies to. Run `docker compose down` to stop everything.
 
 ## Codegen
 
