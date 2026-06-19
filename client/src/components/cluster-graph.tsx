@@ -36,10 +36,10 @@ const EDGE_DIM = "#cbd5e1"
 // partition view. Because views diverge, S->T and T->S are independent edges.
 function buildEdges(
   nodes: ClusterNodeInfo[],
-  selectedPartition: number | null,
+  selectedPartition: number | null
 ): Edge[] {
   const idByNodeId = new Map(
-    nodes.filter((n) => n.nodeId).map((n) => [n.nodeId!, n.id]),
+    nodes.filter((n) => n.nodeId).map((n) => [n.nodeId!, n.id])
   )
 
   const pairs = new Map<
@@ -114,7 +114,9 @@ function inwardPosition(angle: number): Position {
 export function ClusterGraph() {
   const { nodes: clusterNodes, loading, error } = useCluster()
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null)
-  const [selectedPartition, setSelectedPartition] = useState<number | null>(null)
+  const [selectedPartition, setSelectedPartition] = useState<number | null>(
+    null
+  )
   const [addingNode, setAddingNode] = useState(false)
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState<KvNodeType>([])
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -140,11 +142,10 @@ export function ClusterGraph() {
     clusterNodes.find((n) => n.partitionsTotal != null)?.partitionsTotal ?? 0
 
   // Clamp selection if P shrinks below the selected partition.
-  useEffect(() => {
-    if (selectedPartition !== null && selectedPartition >= partitionsTotal) {
-      setSelectedPartition(null)
-    }
-  }, [partitionsTotal, selectedPartition])
+  const effectiveSelectedPartition =
+    selectedPartition !== null && selectedPartition >= partitionsTotal
+      ? null
+      : selectedPartition
 
   useEffect(() => {
     if (clusterNodes.length === 0) return
@@ -170,17 +171,17 @@ export function ClusterGraph() {
             pinnedNodeId,
             onTogglePin: handleTogglePin,
             handlePosition: inwardPosition(angle),
-            selectedPartition,
+            selectedPartition: effectiveSelectedPartition,
           },
         }
       })
     })
 
-    setRfEdges(buildEdges(clusterNodes, selectedPartition))
+    setRfEdges(buildEdges(clusterNodes, effectiveSelectedPartition))
   }, [
     clusterNodes,
     pinnedNodeId,
-    selectedPartition,
+    effectiveSelectedPartition,
     handleTogglePin,
     setRfNodes,
     setRfEdges,
@@ -189,7 +190,7 @@ export function ClusterGraph() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground text-sm">Connecting to cluster…</p>
+        <p className="text-sm text-muted-foreground">Connecting to cluster…</p>
       </div>
     )
   }
@@ -197,10 +198,15 @@ export function ClusterGraph() {
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2">
-        <p className="text-destructive text-sm font-medium">Bridge unreachable</p>
-        <p className="text-muted-foreground max-w-xs text-center text-xs">{error}</p>
-        <p className="text-muted-foreground text-xs">
-          Run <code className="font-mono">pnpm dev</code> in <code className="font-mono">bridge/</code> to start the bridge.
+        <p className="text-sm font-medium text-destructive">
+          Bridge unreachable
+        </p>
+        <p className="max-w-xs text-center text-xs text-muted-foreground">
+          {error}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Run <code className="font-mono">pnpm dev</code> in{" "}
+          <code className="font-mono">bridge/</code> to start the bridge.
         </p>
       </div>
     )
@@ -209,9 +215,12 @@ export function ClusterGraph() {
   if (clusterNodes.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2">
-        <p className="text-muted-foreground text-sm">No convergeKV nodes found.</p>
-        <p className="text-muted-foreground text-xs">
-          Run <code className="font-mono">docker compose up -d</code> to start the cluster.
+        <p className="text-sm text-muted-foreground">
+          No convergeKV nodes found.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Run <code className="font-mono">docker compose up -d</code> to start
+          the cluster.
         </p>
       </div>
     )
@@ -235,7 +244,7 @@ export function ClusterGraph() {
         <Panel position="top-left">
           <PartitionSelector
             total={partitionsTotal}
-            value={selectedPartition}
+            value={effectiveSelectedPartition}
             onChange={setSelectedPartition}
           />
         </Panel>

@@ -206,7 +206,13 @@ app.patch("/api/nodes/:id/kv", async (req, res) => {
     // An isolated node never completes replication, so fail fast there.
     const timeout = node.networkAttached ? 5000 : 2000
     try {
-      await patchKV(node.grpcAddr, parsed.data.key, value, deleteFields, timeout)
+      await patchKV(
+        node.grpcAddr,
+        parsed.data.key,
+        value,
+        deleteFields,
+        timeout
+      )
       res.json({})
     } catch (err) {
       const partial = partitionPartial(err, node)

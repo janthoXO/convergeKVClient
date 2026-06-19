@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "contracts:generate": "openapi-ts"
   },
+  "packageManager": "pnpm@11.8.0",
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
     "@hey-api/client-fetch": "^0.13.1",

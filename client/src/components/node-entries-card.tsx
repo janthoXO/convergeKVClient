@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { fetchEntries, deleteKV, type DebugDoc, type DebugField } from "@/lib/api"
+import {
+  fetchEntries,
+  deleteKV,
+  type DebugDoc,
+  type DebugField,
+} from "@/lib/api"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -97,12 +102,14 @@ function FieldRow({ field }: { field: DebugField }) {
   return (
     <div className="flex flex-col gap-0.5 font-mono text-[11px]">
       <div className="break-all">
-        <span className="text-purple-500 dark:text-purple-400">"{field.name}"</span>
+        <span className="text-purple-500 dark:text-purple-400">
+          "{field.name}"
+        </span>
         {": "}
         <JsonValue value={parseJson(field.value)} />
       </div>
       <div
-        className="text-muted-foreground truncate text-[10px]"
+        className="truncate text-[10px] text-muted-foreground"
         title={`actor ${field.dotActor} · seq ${field.dotSeq} · hlc ${field.hlc}`}
       >
         {actorShort}…:{field.dotSeq} · {time ? time.toLocaleTimeString() : "—"}|
@@ -135,7 +142,8 @@ export function NodeEntriesCard({
     const q = search.trim().toLowerCase()
     if (!q) return docs
     return docs.filter(
-      (d) => d.key.toLowerCase().includes(q) || d.document.toLowerCase().includes(q),
+      (d) =>
+        d.key.toLowerCase().includes(q) || d.document.toLowerCase().includes(q)
     )
   }, [docs, search])
 
@@ -181,7 +189,7 @@ export function NodeEntriesCard({
         clearTimeout(closeTimerRef.current)
         closeTimerRef.current = null
       }
-      load()
+      queueMicrotask(load)
     } else {
       // Clear cache 5 s after close
       closeTimerRef.current = setTimeout(() => {
@@ -219,7 +227,7 @@ export function NodeEntriesCard({
   if (!reachable) {
     return (
       <div className="flex flex-col gap-2 p-1">
-        <p className="text-muted-foreground text-xs">Node is unreachable.</p>
+        <p className="text-xs text-muted-foreground">Node is unreachable.</p>
       </div>
     )
   }
@@ -239,7 +247,9 @@ export function NodeEntriesCard({
             disabled={refreshing}
             title="Refresh"
           >
-            <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`}
+            />
           </Button>
           <Button
             size="icon"
@@ -264,7 +274,7 @@ export function NodeEntriesCard({
       </div>
 
       <div className="relative">
-        <Search className="text-muted-foreground absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2" />
+        <Search className="absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -273,16 +283,18 @@ export function NodeEntriesCard({
         />
       </div>
 
-      {loadError && <p className="text-destructive text-xs">{loadError}</p>}
+      {loadError && <p className="text-xs text-destructive">{loadError}</p>}
 
       {docs.length === 0 && !loadError && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           {refreshing ? "Loading…" : "No documents."}
         </p>
       )}
 
       {docs.length > 0 && filteredDocs.length === 0 && (
-        <p className="text-muted-foreground text-xs">No keys match "{search}".</p>
+        <p className="text-xs text-muted-foreground">
+          No keys match "{search}".
+        </p>
       )}
 
       {filteredDocs.length > 0 && (
@@ -297,11 +309,17 @@ export function NodeEntriesCard({
                         <span className="truncate font-mono text-xs font-semibold">
                           {doc.key}
                         </span>
-                        <Badge variant="outline" className="h-4 shrink-0 px-1 text-[10px]">
+                        <Badge
+                          variant="outline"
+                          className="h-4 shrink-0 px-1 text-[10px]"
+                        >
                           p{doc.partition}
                         </Badge>
                         {doc.tombstone && (
-                          <Badge variant="secondary" className="h-4 shrink-0 px-1 text-[10px]">
+                          <Badge
+                            variant="secondary"
+                            className="h-4 shrink-0 px-1 text-[10px]"
+                          >
                             tombstone
                           </Badge>
                         )}
@@ -309,7 +327,7 @@ export function NodeEntriesCard({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="text-muted-foreground hover:text-destructive h-5 w-5 shrink-0"
+                        className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
                         title="Delete key"
                         onClick={() => setPendingDelete(doc.key)}
                       >
@@ -319,11 +337,13 @@ export function NodeEntriesCard({
                     <ScrollArea className="h-44">
                       <div className="flex flex-col gap-2 pr-2 pl-2">
                         {doc.tombstone ? (
-                          <span className="text-destructive font-mono text-[11px] line-through">
+                          <span className="font-mono text-[11px] text-destructive line-through">
                             deleted
                           </span>
                         ) : doc.fields && doc.fields.length > 0 ? (
-                          doc.fields.map((f) => <FieldRow key={f.name} field={f} />)
+                          doc.fields.map((f) => (
+                            <FieldRow key={f.name} field={f} />
+                          ))
                         ) : (
                           <span className="font-mono text-[11px] break-all">
                             <JsonValue value={parseJson(doc.document)} />
@@ -348,8 +368,9 @@ export function NodeEntriesCard({
             >
               <ChevronLeft className="h-3 w-3" />
             </Button>
-            <span className="text-muted-foreground text-[10px]">
-              {filteredDocs.length === 0 ? 0 : currentIndex + 1} / {filteredDocs.length}
+            <span className="text-[10px] text-muted-foreground">
+              {filteredDocs.length === 0 ? 0 : currentIndex + 1} /{" "}
+              {filteredDocs.length}
             </span>
             <Button
               size="icon"

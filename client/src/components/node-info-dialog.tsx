@@ -34,8 +34,10 @@ const isSeed = (name: string) => /(^|[-_])seed([-_]|$)/.test(name)
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-muted-foreground shrink-0 text-xs">{label}</span>
-      <span className="break-all text-right font-mono text-[11px]">{value}</span>
+      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+      <span className="text-right font-mono text-[11px] break-all">
+        {value}
+      </span>
     </div>
   )
 }
@@ -74,7 +76,7 @@ export function NodeInfoDialog({ nodeInfo, open, onOpenChange }: Props) {
         </DialogHeader>
 
         {!nodeInfo.reachable ? (
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             Node is unreachable — no Inspect data available.
           </p>
         ) : (
@@ -96,10 +98,14 @@ export function NodeInfoDialog({ nodeInfo, open, onOpenChange }: Props) {
               </span>
               <div className="flex flex-wrap gap-1">
                 {owned.length === 0 ? (
-                  <span className="text-muted-foreground text-xs">none</span>
+                  <span className="text-xs text-muted-foreground">none</span>
                 ) : (
                   owned.map((p) => (
-                    <Badge key={p} variant="secondary" className="px-1.5 py-0 text-[10px]">
+                    <Badge
+                      key={p}
+                      variant="secondary"
+                      className="px-1.5 py-0 text-[10px]"
+                    >
                       {p}
                     </Badge>
                   ))
@@ -138,7 +144,7 @@ export function NodeInfoDialog({ nodeInfo, open, onOpenChange }: Props) {
         )}
 
         <div className="mt-1 flex items-center justify-between border-t pt-3">
-          <span className="text-muted-foreground text-[11px]">
+          <span className="text-[11px] text-muted-foreground">
             {seed
               ? "The seed node cannot be removed."
               : "Stops and removes this node's container."}

@@ -1,6 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,17 +40,31 @@ export interface KvNodeData extends Record<string, unknown> {
 export type KvNodeType = Node<KvNodeData, "kvNode">
 
 export function KvNode({ id, data }: NodeProps<KvNodeType>) {
-  const { nodeInfo, pinnedNodeId, onTogglePin, handlePosition, selectedPartition } = data
+  const {
+    nodeInfo,
+    pinnedNodeId,
+    onTogglePin,
+    handlePosition,
+    selectedPartition,
+  } = data
   const isPinned = pinnedNodeId === id
   const [hovered, setHovered] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [addKvOpen, setAddKvOpen] = useState(false)
   const [editKvDoc, setEditKvDoc] = useState<DebugDoc | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
-  const [optimisticAttached, setOptimisticAttached] = useState<boolean | null>(null)
+  const [optimisticAttached, setOptimisticAttached] = useState<boolean | null>(
+    null
+  )
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const isAttached = optimisticAttached ?? nodeInfo.networkAttached
+  // Once real data confirms the optimistic guess, defer back to it so later
+  // external changes to networkAttached keep showing up live.
+  const isAttached =
+    optimisticAttached !== null &&
+    optimisticAttached !== nodeInfo.networkAttached
+      ? optimisticAttached
+      : nodeInfo.networkAttached
   const isOpen = isPinned || hovered
   const ownsSelected =
     selectedPartition === null ||
@@ -60,13 +78,10 @@ export function KvNode({ id, data }: NodeProps<KvNodeType>) {
     hoverTimerRef.current = setTimeout(() => setHovered(false), 150)
   }
 
-  const handlePortClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      setConfirmOpen(true)
-    },
-    [],
-  )
+  const handlePortClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setConfirmOpen(true)
+  }, [])
 
   const handleNetworkAction = useCallback(async () => {
     const action = isAttached ? "disconnect" : "connect"
@@ -75,20 +90,13 @@ export function KvNode({ id, data }: NodeProps<KvNodeType>) {
     try {
       await setNodeNetwork(nodeInfo.name, action)
       toast.success(
-        `${nodeInfo.name} ${action === "disconnect" ? "disconnected from" : "reconnected to"} network`,
+        `${nodeInfo.name} ${action === "disconnect" ? "disconnected from" : "reconnected to"} network`
       )
     } catch (err) {
       setOptimisticAttached(null)
       toast.error((err as Error).message)
     }
   }, [isAttached, nodeInfo.name])
-
-  // Reset optimistic state once real data confirms the change
-  useEffect(() => {
-    if (optimisticAttached !== null && optimisticAttached === nodeInfo.networkAttached) {
-      setOptimisticAttached(null)
-    }
-  }, [optimisticAttached, nodeInfo.networkAttached])
 
   const shortId = nodeInfo.nodeId ? nodeInfo.nodeId.slice(0, 8) : nodeInfo.name
 
@@ -104,15 +112,18 @@ export function KvNode({ id, data }: NodeProps<KvNodeType>) {
           >
             <Card
               className={cn(
-                "w-44 select-none shadow-md transition-shadow",
-                isPinned && "ring-primary ring-2",
+                "w-44 shadow-md transition-shadow select-none",
+                isPinned && "ring-2 ring-primary",
                 !isAttached && "opacity-60",
-                !ownsSelected && "opacity-30 grayscale",
+                !ownsSelected && "opacity-30 grayscale"
               )}
             >
-              <CardHeader className="pb-1 pt-3">
+              <CardHeader className="pt-3 pb-1">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="truncate font-mono text-xs font-semibold" title={nodeInfo.nodeId ?? nodeInfo.name}>
+                  <span
+                    className="truncate font-mono text-xs font-semibold"
+                    title={nodeInfo.nodeId ?? nodeInfo.name}
+                  >
                     {shortId}
                   </span>
                   <div className="flex shrink-0 items-center gap-0.5">
@@ -137,16 +148,16 @@ export function KvNode({ id, data }: NodeProps<KvNodeType>) {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pb-3 pt-0">
-                <p className="text-muted-foreground truncate font-mono text-[10px]">
+              <CardContent className="pt-0 pb-3">
+                <p className="truncate font-mono text-[10px] text-muted-foreground">
                   {nodeInfo.name}
                 </p>
                 {nodeInfo.generation && (
-                  <p className="text-muted-foreground font-mono text-[10px]">
+                  <p className="font-mono text-[10px] text-muted-foreground">
                     gen {nodeInfo.generation}
                   </p>
                 )}
-                <p className="text-muted-foreground text-[10px]">
+                <p className="text-[10px] text-muted-foreground">
                   {nodeInfo.ownedPartitions.length} partition
                   {nodeInfo.ownedPartitions.length !== 1 ? "s" : ""}
                 </p>
@@ -188,9 +199,13 @@ export function KvNode({ id, data }: NodeProps<KvNodeType>) {
           "!h-3.5 !w-3.5 cursor-pointer border-2 transition-colors",
           isAttached
             ? "!border-green-500 !bg-green-500 hover:!bg-green-600"
-            : "!border-muted-foreground !bg-background hover:!border-destructive",
+            : "!border-muted-foreground !bg-background hover:!border-destructive"
         )}
-        title={isAttached ? "Click to disconnect from network" : "Click to reconnect to network"}
+        title={
+          isAttached
+            ? "Click to disconnect from network"
+            : "Click to reconnect to network"
+        }
       />
       <Handle
         type="target"

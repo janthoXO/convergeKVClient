@@ -16,8 +16,10 @@ const ALL = "all"
 
 export function PartitionSelector({ total, value, onChange }: Props) {
   return (
-    <div className="bg-background/90 flex items-center gap-2 rounded-md border px-2 py-1.5 shadow-sm backdrop-blur">
-      <span className="text-muted-foreground text-xs font-medium">Partition</span>
+    <div className="flex items-center gap-2 rounded-md border bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur">
+      <span className="text-xs font-medium text-muted-foreground">
+        Partition
+      </span>
       <Select
         value={value === null ? ALL : String(value)}
         onValueChange={(v) => onChange(v === ALL ? null : Number(v))}

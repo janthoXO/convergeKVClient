@@ -22,7 +22,8 @@ const COMPOSE_PROJECT = env.COMPOSE_PROJECT
 const GRPC_PORT = 7000
 const DEBUG_NET_PREFIX = "convergekv-dbg-"
 
-const debugNetName = (containerName: string) => `${DEBUG_NET_PREFIX}${containerName}`
+const debugNetName = (containerName: string) =>
+  `${DEBUG_NET_PREFIX}${containerName}`
 const isDebugNet = (name: string) => name.startsWith(DEBUG_NET_PREFIX)
 
 export interface ClusterNode {
@@ -180,7 +181,8 @@ export async function listClusterNodes(): Promise<ClusterNode[]> {
     // survives isolation. Final fallbacks cover the brief window before the
     // debug attach lands.
     let grpcAddr: string | null = null
-    if (onCluster && publishedPort) grpcAddr = `${env.NODE_HOST}:${publishedPort}`
+    if (onCluster && publishedPort)
+      grpcAddr = `${env.NODE_HOST}:${publishedPort}`
     else if (debugIp) grpcAddr = `${debugIp}:${GRPC_PORT}`
     else if (publishedPort) grpcAddr = `${env.NODE_HOST}:${publishedPort}`
     else if (clusterIp) grpcAddr = `${clusterIp}:${GRPC_PORT}`
@@ -201,9 +203,14 @@ async function getClusterNetwork(): Promise<Dockerode.Network> {
   const containers = await listClusterContainers()
   const clusterNet = pickClusterNetwork(containers)
   if (!clusterNet) {
-    throw new Error("cluster network not found (no attached cluster containers)")
+    throw new Error(
+      "cluster network not found (no attached cluster containers)"
+    )
   }
-  const networks = (await docker.listNetworks()) as { Id: string; Name: string }[]
+  const networks = (await docker.listNetworks()) as {
+    Id: string
+    Name: string
+  }[]
   const match = networks.find((n) => n.Name === clusterNet)
   if (!match) throw new Error(`network ${clusterNet} not found`)
   return docker.getNetwork(match.Id)

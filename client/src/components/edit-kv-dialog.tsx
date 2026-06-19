@@ -40,7 +40,11 @@ function parseDocument(doc: DebugDoc): Record<string, unknown> {
   if (doc.tombstone || !doc.document) return {}
   try {
     const parsed = JSON.parse(doc.document)
-    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
       return parsed as Record<string, unknown>
     }
   } catch {
@@ -65,7 +69,13 @@ function rowsFromDoc(doc: DebugDoc): FieldRow[] {
   })
 }
 
-export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Props) {
+export function EditKvDialog({
+  nodeId,
+  nodeName,
+  doc,
+  open,
+  onOpenChange,
+}: Props) {
   const [rows, setRows] = useState<FieldRow[]>([])
   const [original, setOriginal] = useState<Record<string, unknown>>({})
   const [error, setError] = useState<string | null>(null)
@@ -127,7 +137,8 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
         seenNames.add(name)
         let parsed: unknown
         try {
-          parsed = row.valueText.trim() === "" ? null : JSON.parse(row.valueText)
+          parsed =
+            row.valueText.trim() === "" ? null : JSON.parse(row.valueText)
         } catch {
           return { error: `Invalid JSON value for "${name}".` }
         }
@@ -142,13 +153,16 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
             return { error: `Invalid JSON value for "${row.originalName}".` }
           }
           const unchanged =
-            JSON.stringify(parsed) === JSON.stringify(original[row.originalName])
+            JSON.stringify(parsed) ===
+            JSON.stringify(original[row.originalName])
           if (!unchanged) value[row.originalName] = parsed
         }
       }
     }
 
-    const deleteFields = Object.keys(original).filter((name) => !seenNames.has(name))
+    const deleteFields = Object.keys(original).filter(
+      (name) => !seenNames.has(name)
+    )
     return { value, deleteFields }
   }
 
@@ -169,7 +183,9 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
     try {
       const result = await patchKV(nodeId, doc.key, value, deleteFields)
       if (result.partial) {
-        toast.warning(`Patched "${doc.key}" on ${nodeName}`, { description: result.detail })
+        toast.warning(`Patched "${doc.key}" on ${nodeName}`, {
+          description: result.detail,
+        })
       } else {
         toast.success(`Patched "${doc.key}" on ${nodeName}`)
       }
@@ -185,17 +201,21 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit "{doc?.key}" on {nodeName}</DialogTitle>
+          <DialogTitle>
+            Edit "{doc?.key}" on {nodeName}
+          </DialogTitle>
           <DialogDescription>
             Changes are sent as a partial update (KV.Patch): edited and added
-            fields are upserted, removed fields are deleted, untouched fields are left
-            as-is.
+            fields are upserted, removed fields are deleted, untouched fields
+            are left as-is.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex max-h-80 flex-col gap-1 overflow-y-auto pr-1">
           {rows.length === 0 && (
-            <p className="text-muted-foreground text-xs">No top-level fields.</p>
+            <p className="text-xs text-muted-foreground">
+              No top-level fields.
+            </p>
           )}
           {rows.map((row) => (
             <div
@@ -206,25 +226,31 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
                 {row.isNew ? (
                   <Input
                     value={row.name}
-                    onChange={(e) => updateRow(row.id, { name: e.target.value })}
+                    onChange={(e) =>
+                      updateRow(row.id, { name: e.target.value })
+                    }
                     placeholder="field name"
                     className="mb-1 h-6 font-mono text-xs"
                     autoFocus
                   />
                 ) : (
-                  <span className="font-mono text-xs font-semibold">{row.name}</span>
+                  <span className="font-mono text-xs font-semibold">
+                    {row.name}
+                  </span>
                 )}
 
                 {row.editing || row.isNew ? (
                   <Textarea
                     value={row.valueText}
-                    onChange={(e) => updateRow(row.id, { valueText: e.target.value })}
+                    onChange={(e) =>
+                      updateRow(row.id, { valueText: e.target.value })
+                    }
                     placeholder='"value" or { } or 42'
                     rows={2}
                     className="mt-1 font-mono text-xs"
                   />
                 ) : (
-                  <pre className="mt-0.5 whitespace-pre-wrap break-all font-mono text-[11px]">
+                  <pre className="mt-0.5 font-mono text-[11px] break-all whitespace-pre-wrap">
                     {row.valueText}
                   </pre>
                 )}
@@ -244,7 +270,7 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="text-muted-foreground hover:text-destructive h-5 w-5"
+                  className="h-5 w-5 text-muted-foreground hover:text-destructive"
                   title="Delete field"
                   onClick={() => removeRow(row.id)}
                 >
@@ -266,13 +292,21 @@ export function EditKvDialog({ nodeId, nodeName, doc, open, onOpenChange }: Prop
           Add field
         </Button>
 
-        {error && <p className="text-destructive text-xs">{error}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting || !doc}>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || !doc}
+          >
             {submitting ? "Saving…" : "Save changes"}
           </Button>
         </div>

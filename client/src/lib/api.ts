@@ -21,11 +21,18 @@ import {
   removeNode as _removeNode,
   setNodeNetwork as _setNodeNetwork,
 } from "../gen/sdk.gen"
-import type { ClusterNodeInfo, DebugDoc, MutationResult } from "../gen/types.gen"
+import type {
+  ClusterNodeInfo,
+  DebugDoc,
+  MutationResult,
+} from "../gen/types.gen"
 
 export async function fetchCluster(): Promise<ClusterNodeInfo[]> {
   const { data, error } = await getCluster()
-  if (error) throw new Error((error as { error?: string }).error ?? "cluster fetch failed")
+  if (error)
+    throw new Error(
+      (error as { error?: string }).error ?? "cluster fetch failed"
+    )
   return data!
 }
 
@@ -41,9 +48,12 @@ export async function fetchEntries(nodeId: string): Promise<DebugDoc[]> {
 export async function putKV(
   nodeId: string,
   key: string,
-  value: Record<string, unknown>,
+  value: Record<string, unknown>
 ): Promise<MutationResult> {
-  const { data, error } = await putNodeKv({ path: { id: nodeId }, body: { key, value } })
+  const { data, error } = await putNodeKv({
+    path: { id: nodeId },
+    body: { key, value },
+  })
   if (error) {
     const e = error as { details?: string; error?: string }
     throw new Error(e.details ?? e.error ?? "PUT failed")
@@ -55,7 +65,7 @@ export async function patchKV(
   nodeId: string,
   key: string,
   value: Record<string, unknown>,
-  deleteFields: string[],
+  deleteFields: string[]
 ): Promise<MutationResult> {
   const { data, error } = await patchNodeKv({
     path: { id: nodeId },
@@ -68,8 +78,14 @@ export async function patchKV(
   return data ?? {}
 }
 
-export async function deleteKV(nodeId: string, key: string): Promise<MutationResult> {
-  const { data, error } = await deleteNodeKv({ path: { id: nodeId }, body: { key } })
+export async function deleteKV(
+  nodeId: string,
+  key: string
+): Promise<MutationResult> {
+  const { data, error } = await deleteNodeKv({
+    path: { id: nodeId },
+    body: { key },
+  })
   if (error) {
     const e = error as { details?: string; error?: string }
     throw new Error(e.details ?? e.error ?? "DELETE failed")
@@ -79,20 +95,25 @@ export async function deleteKV(nodeId: string, key: string): Promise<MutationRes
 
 export async function addNode(): Promise<{ id: string; name: string }> {
   const { data, error } = await _addNode()
-  if (error) throw new Error((error as { error?: string }).error ?? "add node failed")
+  if (error)
+    throw new Error((error as { error?: string }).error ?? "add node failed")
   return data!
 }
 
 export async function removeNode(nodeId: string): Promise<void> {
   const { error } = await _removeNode({ path: { id: nodeId } })
-  if (error) throw new Error((error as { error?: string }).error ?? "remove node failed")
+  if (error)
+    throw new Error((error as { error?: string }).error ?? "remove node failed")
 }
 
 export async function setNodeNetwork(
   nodeId: string,
-  action: "connect" | "disconnect",
+  action: "connect" | "disconnect"
 ): Promise<void> {
-  const { error } = await _setNodeNetwork({ path: { id: nodeId }, body: { action } })
+  const { error } = await _setNodeNetwork({
+    path: { id: nodeId },
+    body: { action },
+  })
   if (error) {
     const e = error as { error?: string }
     throw new Error(e.error ?? "network action failed")

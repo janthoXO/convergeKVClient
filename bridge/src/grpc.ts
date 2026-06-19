@@ -5,10 +5,7 @@ import path from "path"
 const PROTO_ROOT = path.join(import.meta.dirname, "proto")
 
 const packageDef = protoLoader.loadSync(
-  [
-    path.join(PROTO_ROOT, "kv.proto"),
-    path.join(PROTO_ROOT, "debug.proto"),
-  ],
+  [path.join(PROTO_ROOT, "kv.proto"), path.join(PROTO_ROOT, "debug.proto")],
   {
     keepCase: false,
     longs: String,
@@ -181,8 +178,8 @@ export function dumpDocuments(addr: string): Promise<DebugDoc[]> {
         tombstone,
         fields: tombstone
           ? []
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          : (d.fields ?? []).map((f: any) => ({
+          : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (d.fields ?? []).map((f: any) => ({
               name: f.name ?? "",
               value: toBuf(f.value).toString("utf8"),
               dotActor: uuidFromBytes(f.dotActor),

@@ -1,7 +1,7 @@
-import dotenv from "dotenv";
-import z from "zod";
+import dotenv from "dotenv"
+import z from "zod"
 
-dotenv.config();
+dotenv.config()
 
 export const EnvSchema = z.object({
   PORT: z.coerce.number().default(3030),
@@ -20,6 +20,6 @@ export const EnvSchema = z.object({
   BRIDGE_CONTAINER: z.string().optional(),
 })
 
-export type Env = z.output<typeof EnvSchema>;
+export type Env = z.output<typeof EnvSchema>
 
-export const env = EnvSchema.parse(process.env);
+export const env = EnvSchema.parse(process.env)

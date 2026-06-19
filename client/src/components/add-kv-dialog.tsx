@@ -33,7 +33,11 @@ export function AddKvDialog({ nodeId, nodeName, open, onOpenChange }: Props) {
       setValueError("Invalid JSON")
       return null
     }
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       setValueError("Value must be a JSON object { … }")
       return null
     }
@@ -51,7 +55,9 @@ export function AddKvDialog({ nodeId, nodeName, open, onOpenChange }: Props) {
     try {
       const result = await putKV(nodeId, key.trim(), value)
       if (result.partial) {
-        toast.warning(`Written "${key}" to ${nodeName}`, { description: result.detail })
+        toast.warning(`Written "${key}" to ${nodeName}`, {
+          description: result.detail,
+        })
       } else {
         toast.success(`Written "${key}" to ${nodeName}`)
       }
@@ -96,7 +102,7 @@ export function AddKvDialog({ nodeId, nodeName, open, onOpenChange }: Props) {
               className="font-mono text-xs"
             />
             {valueError && (
-              <p className="text-destructive text-xs">{valueError}</p>
+              <p className="text-xs text-destructive">{valueError}</p>
             )}
           </div>
           <div className="flex justify-end gap-2">
