@@ -2,6 +2,14 @@
 
 Visual cluster debugger for the [convergeKV](https://github.com/janthoXO/convergeKV) distributed KV store.
 
+## Table of contents
+
+- [Structure](#structure)
+- [Running](#running)
+- [Running with Docker Compose](#running-with-docker-compose)
+- [Codegen](#codegen)
+- [Features](#features)
+
 ## Structure
 
 ```
@@ -10,6 +18,11 @@ convergeKVClient/
 ├── bridge/             # Express server: proxies gRPC calls + manages Docker network
 └── client/             # React + Vite debug UI
 ```
+
+`bridge/` and `client/` each have their own README (what they do, how to run them as a user/stakeholder) and README_DEV (technical internals, for contributors):
+
+- [`bridge/README.md`](bridge/README.md) · [`bridge/README_DEV.md`](bridge/README_DEV.md)
+- [`client/README.md`](client/README.md) · [`client/README_DEV.md`](client/README_DEV.md)
 
 The root `docker-compose.yml` builds and runs the debug tooling itself (the bridge and the client). The convergeKV backend cluster it inspects runs separately — see [Running with Docker Compose](#running-with-docker-compose).
 
@@ -55,3 +68,5 @@ The generated `src/gen/` folders are committed, so a fresh clone works without r
 - **Write KV** — set, patch, or delete a key on the selected node via the gRPC `KV` service (`Put` / `Patch` / `Delete`)
 - **Cluster size** — add or remove convergeKV containers on the fly
 - **Network isolation** — disconnect/reconnect a node from the `convergekv` Docker network to simulate a partition
+
+For how each piece works under the hood, see [`bridge/README_DEV.md`](bridge/README_DEV.md) and [`client/README_DEV.md`](client/README_DEV.md).
